@@ -1,0 +1,65 @@
+# Entornos virtuales
+venv/
+env/
+.env
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Archivos de base de datos
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# Logs
+*.log
+data_loader.log
+
+# Archivos temporales
+*.tmp
+*.temp
+.DS_Store
+
+# Archivos de IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.pydevproject
+.settings/
+
+# Archivos de configuración local
+.env.local
+.env.*.local
+*.env
+
+# Archivos de Excel y datos
+*.xlsx
+*.xls
+*.csv
+uploads/
+
+# Directorios específicos de tu proyecto
+data/
+logs/
