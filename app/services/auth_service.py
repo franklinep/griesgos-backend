@@ -58,8 +58,11 @@ class AuthService:
     
     def create_jwt_token(self, persona: Persona, login: PersonaLogin) -> str:
         now = datetime.now(timezone.utc)
-        exp_time = now + timedelta(seconds=5)
-        
+        exp_time = now + timedelta(minutes=5)
+        # Convertir a timestamp Unix (segundos desde la época)
+        now_ts = int(now.timestamp())
+        exp_ts = int(exp_time.timestamp())
+
         payload = {
             "id": persona.i_cod_persona,
             "username": persona.v_num_documento,
@@ -68,8 +71,8 @@ class AuthService:
             "apellidoPaterno": persona.v_des_apellidos,
             "correo": login.v_des_correo,
             "celular": login.v_num_telefono,
-            "iat": int(now.timestamp()),
-            "exp": int(exp_time.timestamp())
+            "iat": now_ts,
+            "exp": exp_ts
         }
         print("Issued at:", datetime.fromtimestamp(payload['iat']))
         print("Expires at:", datetime.fromtimestamp(payload['exp']))

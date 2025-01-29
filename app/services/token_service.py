@@ -38,12 +38,16 @@ class TokenService:
                 algorithms=[ALGORITHM], 
                 options={"verify_exp": True}  # Habilitar validación del campo `exp`
             )
-            print("Issued at:", datetime.fromtimestamp(payload['iat']))
-            print("Expires at:", datetime.fromtimestamp(payload['exp']))
-            print("Current UTC time:", datetime.now(timezone.utc))
-            return payload
 
-                        
+            # Verificar la expiración manualmente usando UTC
+            now = datetime.now(timezone.utc)
+            exp = datetime.fromtimestamp(payload['exp'], tz=timezone.utc)
+
+            if now > exp:
+                raise ExpiredSignatureError("Token has expired")
+            
+            return payload
+  
         except ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

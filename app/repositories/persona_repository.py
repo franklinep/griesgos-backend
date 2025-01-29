@@ -14,6 +14,7 @@ class PersonaRepository:
         return (
             self.db.query(Persona)
             .filter(Persona.i_est_registro == 1)
+            .order_by(Persona.i_cod_persona)  # Agregamos ORDER BY por defecto
             .offset(skip)
             .limit(limit)
             .all()
@@ -52,6 +53,7 @@ class PersonaRepository:
                     Persona.i_est_registro == 1
                 )
             )
+            .order_by(Persona.i_cod_persona)
             .all()
         )
     
@@ -73,7 +75,7 @@ class PersonaRepository:
         return persona
 
 class PersonaLoginRepository:
-    def __init__(self, db: SessionLocal):
+    def __init__(self, db: Session = SessionLocal):
         self.db = db
     
     def get_by_persona(self, i_cod_persona: int) -> Optional[PersonaLogin]:

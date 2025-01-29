@@ -8,8 +8,7 @@ import random
 import string
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
-
-from sqlalchemy import Tuple
+from smtplib import SMTPException, SMTPConnectError
 
 load_dotenv()
 
@@ -26,33 +25,45 @@ class EmailService:
     def generate_otp(self) -> str:
         return ''.join(random.choices(string.digits, k=5))
     
-    def save_otp(self, email: str, otp: str):
+    def save_otp(self, email: str, otp: str, data: dict):
         expiration = datetime.now(timezone.utc) + timedelta(minutes=5)
         self._otp_store[email] = {
             'otp': otp,
-            'expiration': expiration
+            'expiration': expiration,
+            'data': data.copy()
         }
+        print(f"OTP guardado para {email}: {self._otp_store[email]}")
     
-    def verify_otp(self, email: str, otp: str) -> bool:
+    def verify_otp(self, email: str, otp: str) -> Optional[dict]:
         stored = self._otp_store.get(email)
-        if stored == None:
-            return False
-            
-        now = datetime.now(timezone.utc)
-        expiration = stored['expiration']
-
-        print(f"Stored OTP: {stored['otp']} - Provided OTP: {otp}")
-        print(f"UTC Now: {now} - Expiration: {expiration}")
-
-        if now > expiration or stored['otp']!=otp: 
-            return False
+        if not stored:
+            return None
         
-        return True
+        now = datetime.now(timezone.utc)
+        print(f"Verificando OTP para {email}:")
+        print(f"OTP almacenado: {stored['otp']}")
+        print(f"OTP recibido: {otp}")
+        print(f"Expiración: {stored['expiration']}")
+        print(f"Hora actual: {now}")
+
+        if now > stored['expiration']:
+            print("OTP expirado")
+            del self._otp_store[email]
+            return None
+        
+        if stored['otp'] != otp:
+            print("OTP no coincide")
+            return None
+        
+        # Elimina el OTP y devuelve los datos almacenados
+        data = stored['data']
+        del self._otp_store[email]
+        return data
     
-    def send_otp_email(self, email: str) -> tuple[bool, str]:
+    def send_otp_email(self, email: str, data: dict) -> tuple[bool, str]:
         try:
             otp = self.generate_otp()
-            self.save_otp(email, otp)
+            self.save_otp(email, otp, data)
             
             message = MIMEMultipart()
             message["From"] = self.smtp_username
@@ -72,10 +83,15 @@ class EmailService:
             
             message.attach(MIMEText(body, "html"))
             
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls() # actualizar a TLS -> conexion segura
-                server.login(self.smtp_username, self.smtp_password)
-                server.send_message(message)
+            try: 
+                with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                    server.starttls() # actualizar a TLS -> conexion segura
+                    server.login(self.smtp_username, self.smtp_password)
+                    server.send_message(message)
+            except SMTPConnectError as e:
+                return False, f"Error al conectar al servidor SMTP: {str(e)}"
+            except SMTPException as e:
+                return False, f"Error al realizar la autenticación SMTP: {str(e)}"
             
             return True, "Código enviado exitosamente"
             

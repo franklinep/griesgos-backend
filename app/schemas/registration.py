@@ -38,8 +38,9 @@ class RegistrationRequest(BaseModel):
     class Config:
         from_attributes = True
 
-class RegistrationVerifyRequest(RegistrationRequest):
-    otp: str = Field(..., min_length=5, max_length=5)
+class RegistrationVerifyRequest(BaseModel):
+    correo: EmailStr
+    otp: str
 
 
 class RegistrationResponse(BaseModel):

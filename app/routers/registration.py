@@ -10,15 +10,25 @@ from app.loaders.database import get_db
 
 router = APIRouter(prefix="/api/registro", tags=["registro"])
 email_service = EmailService()  
-doc = None
 
 @router.post("", response_model=RegistrationResponse)
 async def register_initial(
     request: RegistrationRequest,
     db: Session = Depends(get_db)
 ):    
-    success, message = email_service.send_otp_email(request.correo)
-    doc = request.documento
+    
+    registration_service = RegistrationService(RegistrationRepository(db))
+
+    # Validar datos usando el servicio de registro
+    validation_result = registration_service.register(request)
+    if not validation_result.success:
+        return validation_result
+    
+    # Envía OTP y guarda datos de registro
+    success, message = email_service.send_otp_email(
+        request.correo, 
+        request.dict()  # Pasa todos los datos del registro
+    )
 
     return RegistrationResponse(
         success=success,
@@ -34,25 +44,25 @@ async def verificar_otp(
     request: RegistrationVerifyRequest,
     db: Session = Depends(get_db)
 ):
-    # Verify OTP first
-    is_valid = email_service.verify_otp(request.correo, request.otp)
-    if not is_valid:
+    # Verificar OTP y obtener datos de registro
+    stored_data = email_service.verify_otp(request.correo, request.otp)
+    if not stored_data:
         return RegistrationResponse(
             success=False,
-            message="El código de verificación no es válido o ha expirado",
+            message="Código inválido o expirado",
             error={"code": "REG001"}
         )
 
-     # If OTP valid, proceed with registration
-    registration_repository = RegistrationRepository(db)
-    registration_service = RegistrationService(registration_repository)
-    result = registration_service.register(request)
+    # Crear usuario con datos almacenados
+    registration_request = RegistrationRequest(**stored_data)
+    registration_service = RegistrationService(RegistrationRepository(db))
+    result = registration_service.register(registration_request)
 
     return RegistrationResponse(
         success=True,
-        message="Usuario registrado exitosamente",
+        message="Registro exitoso",
         data={
-            "username": request.documento,
-            "email": request.correo
+            "username": registration_request.documento,
+            "email": registration_request.correo
         }
     )

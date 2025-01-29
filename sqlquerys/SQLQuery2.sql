@@ -1,0 +1,1 @@
+SELECT * FROM dbo.grietbc_persona_login; 
