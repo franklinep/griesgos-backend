@@ -9,8 +9,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class RegistrationService:
     def __init__(self, registration_repository: RegistrationRepository):
         self.registration_repository = registration_repository
-    
-    def register(self, registration_data: RegistrationRequest) -> RegistrationResponse:
+
+    def validate_registration(self, registration_data: RegistrationRequest) -> RegistrationResponse:
         # Verificar si existe la persona
         persona = self.registration_repository.get_persona_by_documento(
             registration_data.documento
@@ -55,6 +55,17 @@ class RegistrationService:
                     "details": "Este correo electrónico ya está registrado"
                 }
             )
+            
+        return RegistrationResponse(
+            success=True,
+            message="Validación exitosa"
+        )
+    
+    def register(self, registration_data: RegistrationRequest) -> RegistrationResponse:
+        # La validación ya se hizo previamente, podemos proceder directamente
+        persona = self.registration_repository.get_persona_by_documento(
+            registration_data.documento
+        )
         
         # Crear nuevo login
         hashed_password = pwd_context.hash(registration_data.contrasenia)

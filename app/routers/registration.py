@@ -16,23 +16,22 @@ async def register_initial(
     request: RegistrationRequest,
     db: Session = Depends(get_db)
 ):    
-    
+    # Validar existencia previa
     registration_service = RegistrationService(RegistrationRepository(db))
-
-    # Validar datos usando el servicio de registro
-    validation_result = registration_service.register(request)
+    validation_result = registration_service.validate_registration(request)
     if not validation_result.success:
         return validation_result
     
     # Envía OTP y guarda datos de registro
-    success, message = email_service.send_otp_email(
+    success, message, session_token = email_service.send_otp_email(
         request.correo, 
-        request.dict()  # Pasa todos los datos del registro
+        request.dict()
     )
 
     return RegistrationResponse(
         success=success,
         message=message,
+        session_token=session_token,
         data={
             "documento": request.documento,
             "email": request.correo
@@ -45,7 +44,7 @@ async def verificar_otp(
     db: Session = Depends(get_db)
 ):
     # Verificar OTP y obtener datos de registro
-    stored_data = email_service.verify_otp(request.correo, request.otp)
+    stored_data = email_service.verify_otp(request.session_token, request.otp)
     if not stored_data:
         return RegistrationResponse(
             success=False,
@@ -56,13 +55,11 @@ async def verificar_otp(
     # Crear usuario con datos almacenados
     registration_request = RegistrationRequest(**stored_data)
     registration_service = RegistrationService(RegistrationRepository(db))
+    
+    # Validar nuevamente antes de crear
+    validation_result = registration_service.validate_registration(registration_request)
+    if not validation_result.success:
+        return validation_result
+        
     result = registration_service.register(registration_request)
-
-    return RegistrationResponse(
-        success=True,
-        message="Registro exitoso",
-        data={
-            "username": registration_request.documento,
-            "email": registration_request.correo
-        }
-    )
+    return result
