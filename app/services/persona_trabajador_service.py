@@ -69,9 +69,9 @@ class PersonaTrabajadorService:
             t_fec_ingreso=trabajador_data.t_fec_ingreso,
             i_est_registro=1,
             v_usu_reg=audit_data["v_usu_reg"],
+            t_fec_reg=audit_data["t_fec_reg"],
             v_host_reg=audit_data["v_host_reg"],
             v_ip_reg=audit_data["v_ip_reg"],
-            t_fec_reg=datetime.now(timezone.utc)
         )
         
         created_trabajador = self.trabajador_repository.create(new_trabajador)
@@ -147,7 +147,7 @@ class PersonaTrabajadorService:
         trabajador.v_usu_mod = audit_data["v_usu_mod"]
         trabajador.v_host_mod = audit_data["v_host_mod"]
         trabajador.v_ip_mod = audit_data["v_ip_mod"]
-        trabajador.t_fec_mod = datetime.utcnow()
+        trabajador.t_fec_mod = datetime.now(timezone.utc)
         
         self.trabajador_repository.delete(trabajador)
         

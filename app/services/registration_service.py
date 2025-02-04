@@ -1,4 +1,5 @@
 # app/services/registration_service.py
+from datetime import datetime, timezone
 from passlib.context import CryptContext
 from app.repositories.registration_repository import RegistrationRepository
 from app.schemas.registration import RegistrationRequest, RegistrationResponse
@@ -61,20 +62,23 @@ class RegistrationService:
             message="Validación exitosa"
         )
     
-    def register(self, registration_data: RegistrationRequest) -> RegistrationResponse:
-        # La validación ya se hizo previamente, podemos proceder directamente
+    def register(self, registration_data: RegistrationRequest, audit_data: dict) -> RegistrationResponse:
         persona = self.registration_repository.get_persona_by_documento(
             registration_data.documento
         )
         
-        # Crear nuevo login
         hashed_password = pwd_context.hash(registration_data.contrasenia)
         new_login = PersonaLogin(
             i_cod_persona=persona.i_cod_persona,
             v_des_usuario=persona.v_num_documento,
             v_des_clave=hashed_password,
             v_des_correo=registration_data.correo,
-            v_num_telefono=registration_data.telefono
+            v_num_telefono=registration_data.telefono,
+            # Campos de auditoría
+            v_usu_reg=audit_data["v_usu_reg"],
+            t_fec_reg=audit_data["f_fec_reg"],
+            v_host_reg=audit_data["v_host_reg"],
+            v_ip_reg=audit_data["v_ip_reg"],
         )
         
         self.registration_repository.create_login(new_login)

@@ -36,5 +36,17 @@ class PersonaLogin(Base):
     v_des_clave = Column(String(255), nullable=False)
     v_des_correo = Column(String(100), nullable=True, unique=True)
     v_num_telefono = Column(String(20), nullable=True)
+
+    # campos de auditoria
+    i_est_registro = Column(Integer, default=1)
+    v_usu_reg = Column(String(50))
+    v_usu_mod = Column(String(50))
+    t_fec_reg = Column(DateTime)
+    t_fec_mod = Column(DateTime)
+    v_host_reg = Column(String(50))
+    v_host_mod = Column(String(50))
+    v_ip_reg = Column(String(15))
+    v_ip_mod = Column(String(15))
     
+    # Relaciones
     persona = relationship("Persona", back_populates="login")

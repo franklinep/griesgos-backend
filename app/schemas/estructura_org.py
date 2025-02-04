@@ -1,28 +1,31 @@
 # app/schemas/estructura_org.py
+from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional
-
-class UnidadBase(BaseModel):
+class AuditFields(BaseModel):
     v_des_nombre: str
-    
-    class Config:
+
+    i_est_registro: Optional[int] = 1
+    v_usu_reg: Optional[str] = None
+    v_usu_mod: Optional[str] = None
+    t_fec_reg: Optional[datetime] = None
+    t_fec_mod: Optional[datetime] = None
+    v_host_reg: Optional[str] = None
+    v_host_mod: Optional[str] = None
+    v_ip_reg: Optional[str] = None
+    v_ip_mod: Optional[str] = None
+
+    class config:
         from_attributes = True
 
-class AreaBase(BaseModel):
-    i_cod_unidad: int
-    v_des_nombre: str
-    
-    class Config:
-        from_attributes = True
+class UnidadBase(AuditFields):
+    pass
 
-class PuestoBase(BaseModel):
-    v_des_nombre: str
-    
-    class Config:
-        from_attributes = True
+class AreaBase(AuditFields):
+    pass
 
-class CategoriaBase(BaseModel):
-    v_des_nombre: str
-    
-    class Config:
-        from_attributes = True
+class PuestoBase(AuditFields):
+    pass
+
+class CategoriaBase(AuditFields):
+    pass
