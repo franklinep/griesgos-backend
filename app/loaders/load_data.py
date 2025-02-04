@@ -1,11 +1,27 @@
 # app/loaders/load_data.py
+import socket
 import pandas as pd
 import logging
 from datetime import datetime
 from typing import Dict
-from sqlalchemy.exc import IntegrityError, DataError
-from app.models import Persona, Unidad, Area, Puesto, Categoria, PersonaTrabajador
+from app.models.estructura_org import Unidad, Area, Puesto, Categoria
+from app.models.persona import Persona
+from app.models.persona_trabajador import PersonaTrabajador
 from app.loaders.database import SessionLocal
+
+def get_import_audit_data() -> dict:
+    """Retorna los datos de auditoría para el proceso de importación."""
+    return {
+        'i_est_registro': 1,
+        'v_usu_reg': 'system',
+        'v_usu_mod': None,
+        't_fec_reg': datetime.now(),
+        't_fec_mod': None,
+        'v_host_reg': socket.gethostname(),  # Obtiene el hostname real del servidor
+        'v_host_mod': None,
+        'v_ip_reg': socket.gethostbyname(socket.gethostname()),  # IP real del servidor
+        'v_ip_mod': None
+    }
 
 def setup_logger():
     logger = logging.getLogger('data_loader')
@@ -44,6 +60,8 @@ def get_or_create_master_data(db: SessionLocal, df: pd.DataFrame) -> Dict:
         'categoria': (Categoria, 'Position Centro de costo (Código de centro de costos)')
     }
     
+    audit_data = get_import_audit_data()
+    
     for data_type, (model, column) in model_map.items():
         try:
             unique_values = df[column].dropna().unique()
@@ -55,10 +73,11 @@ def get_or_create_master_data(db: SessionLocal, df: pd.DataFrame) -> Dict:
 
                     item = db.query(model).filter(model.v_des_nombre == name).first()
                     if not item:
-                        item = model(v_des_nombre=name)
-                        if data_type == 'area' and master_data['unidad']:
-                            # Asignar la primera unidad como predeterminada para nuevas áreas
-                            item.i_cod_unidad = next(iter(master_data['unidad'].values()))
+                        # Crear nueva entidad con campos de auditoría
+                        item = model(
+                            v_des_nombre=name,
+                            **audit_data
+                        )
                         db.add(item)
                         db.flush()
 
@@ -112,6 +131,8 @@ def process_excel(file_path: str) -> None:
         check_null_values(df, required_cols)
         
         db = SessionLocal()
+        audit_data = get_import_audit_data()
+        
         try:
             # Procesar datos maestros
             master_data = get_or_create_master_data(db, df)
@@ -141,15 +162,11 @@ def process_excel(file_path: str) -> None:
                         v_des_nombres=str(row['Nombres']).strip(),
                         v_des_apellidos=str(row['Primer apellido']).strip(),
                         v_cod_empresa=str(row['ID de persona']).zfill(8),
-                        i_est_registro=1,
-                        v_usu_reg='SYSTEM',
-                        t_fec_reg=datetime.now(),
-                        v_host_reg='IMPORT_SCRIPT',
-                        v_ip_reg='127.0.0.1'
+                        **audit_data
                     )
                     
                     db.add(new_persona)
-                    db.flush()  # Para obtener el i_cod_persona generado
+                    db.flush()
                     
                     # Procesar fecha de ingreso
                     fecha_ingreso = None
@@ -175,11 +192,7 @@ def process_excel(file_path: str) -> None:
                             str(row['Position Centro de costo (Código de centro de costos)']).strip()
                         ),
                         t_fec_ingreso=fecha_ingreso or datetime.now(),
-                        i_est_registro=1,
-                        v_usu_reg='SYSTEM',
-                        t_fec_reg=datetime.now(),
-                        v_host_reg='IMPORT_SCRIPT',
-                        v_ip_reg='127.0.0.1'
+                        **audit_data
                     )
                     
                     db.add(new_trabajador)
