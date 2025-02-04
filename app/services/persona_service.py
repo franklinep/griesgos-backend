@@ -1,5 +1,5 @@
 # app/services/persona_service.py
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import HTTPException
 from app.repositories.persona_repository import PersonaRepository, PersonaLoginRepository
@@ -99,7 +99,7 @@ class PersonaService:
             v_usu_reg=audit_data["v_usu_reg"],
             v_host_reg=audit_data["v_host_reg"],
             v_ip_reg=audit_data["v_ip_reg"],
-            t_fec_reg=datetime.utcnow()
+            t_fec_reg=datetime.now(timezone.utc)
         )
         
         created_persona = self.persona_repository.create(new_persona)
@@ -180,7 +180,7 @@ class PersonaService:
         persona.v_usu_mod = audit_data["v_usu_mod"]
         persona.v_host_mod = audit_data["v_host_mod"]
         persona.v_ip_mod = audit_data["v_ip_mod"]
-        persona.t_fec_mod = datetime.utcnow()
+        persona.t_fec_mod = datetime.now(timezone.utc)
         
         updated_persona = self.persona_repository.update(persona)
         

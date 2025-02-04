@@ -1,5 +1,5 @@
 # app/services/persona_trabajador_service.py
-from datetime import datetime
+from datetime import datetime, timezone
 from app.repositories.persona_trabajador_repository import PersonaTrabajadorRepository
 from app.schemas.persona_trabajador import (
     PersonaTrabajadorCreate,
@@ -71,7 +71,7 @@ class PersonaTrabajadorService:
             v_usu_reg=audit_data["v_usu_reg"],
             v_host_reg=audit_data["v_host_reg"],
             v_ip_reg=audit_data["v_ip_reg"],
-            t_fec_reg=datetime.utcnow()
+            t_fec_reg=datetime.now(timezone.utc)
         )
         
         created_trabajador = self.trabajador_repository.create(new_trabajador)
