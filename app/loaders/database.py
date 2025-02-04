@@ -39,4 +39,5 @@ def get_db() -> Generator:
         db.close()
 
 def init_db():
-    Base.metadata.create_all(bind=engine, checkfirst=True)
+    #Base.metadata.drop_all(bind=engine) # Eliminar tablas
+    Base.metadata.create_all(bind=engine, checkfirst=True) # Crear tablas nuevamente
