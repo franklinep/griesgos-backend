@@ -12,6 +12,7 @@ class PersonaTrabajadorRepository:
         return (
             self.db.query(PersonaTrabajador)
             .filter(PersonaTrabajador.i_est_registro == 1)
+            .order_by(PersonaTrabajador.i_cod_trabajador) 
             .offset(skip)
             .limit(limit)
             .all()
