@@ -1,9 +1,8 @@
 # app/models/persona_trabajador.py
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Numeric
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Numeric
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 from datetime import datetime
-import enum
 
 class PersonaTrabajador(Base):
     __tablename__ = 'griemvc_persona_trabajador'
@@ -25,8 +24,8 @@ class PersonaTrabajador(Base):
     t_fec_mod = Column(DateTime)
     v_host_reg = Column(String(50))
     v_host_mod = Column(String(50))
-    v_ip_reg = Column(String(15))
-    v_ip_mod = Column(String(15))
+    v_ip_reg = Column(String(50))
+    v_ip_mod = Column(String(50))
     
     # Relaciones
     persona = relationship("Persona", back_populates="trabajador")

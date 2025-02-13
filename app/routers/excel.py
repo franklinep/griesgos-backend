@@ -1,6 +1,5 @@
 # app/routers/excel.py
 from fastapi import APIRouter, UploadFile, File
-import pandas as pd
 import os
 from app.loaders.load_data import process_excel
 
