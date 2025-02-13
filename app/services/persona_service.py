@@ -7,7 +7,6 @@ from app.schemas.persona import (
     PersonaCreate, 
     PersonaUpdate, 
     PersonaResponse,
-    PersonaLoginCreate,
     PersonaLoginUpdate
 )
 from app.models.persona import Persona, PersonaLogin
@@ -60,11 +59,9 @@ class PersonaService:
     
     def create_persona(
         self, 
-        persona_data: PersonaCreate, 
-        login_data: Optional[PersonaLoginCreate],
+        persona_data: PersonaCreate,
         audit_data: dict
     ) -> PersonaResponse:
-        # Verificar si ya existe una persona con el mismo documento
         existing_persona = self.persona_repository.get_by_documento(persona_data.v_num_documento)
         if existing_persona:
             return PersonaResponse(
@@ -76,20 +73,6 @@ class PersonaService:
                 }
             )
         
-        # Verificar correo único si se proporciona
-        if login_data and login_data.v_des_correo:
-            existing_login = self.persona_login_repository.get_by_correo(login_data.v_des_correo)
-            if existing_login:
-                return PersonaResponse(
-                    success=False,
-                    message="Correo ya registrado",
-                    error={
-                        "code": "PER003",
-                        "details": "Ya existe un usuario con este correo electrónico"
-                    }
-                )
-        
-        # Crear nueva persona
         new_persona = Persona(
             v_num_documento=persona_data.v_num_documento,
             v_des_nombres=persona_data.v_des_nombres,
@@ -97,23 +80,12 @@ class PersonaService:
             v_cod_empresa=persona_data.v_cod_empresa,
             i_est_registro=1,
             v_usu_reg=audit_data["v_usu_reg"],
-            t_fec_reg=audit_data["t_fec_reg"],
             v_host_reg=audit_data["v_host_reg"],
             v_ip_reg=audit_data["v_ip_reg"],
+            t_fec_reg=audit_data["t_fec_reg"]
         )
         
         created_persona = self.persona_repository.create(new_persona)
-        
-        # Crear login si se proporciona
-        if login_data:
-            new_login = PersonaLogin(
-                i_cod_persona=created_persona.i_cod_persona,
-                v_des_usuario=login_data.v_des_usuario,
-                v_des_clave=pwd_context.hash(login_data.v_des_clave),
-                v_des_correo=login_data.v_des_correo,
-                v_num_telefono=login_data.v_num_telefono
-            )
-            self.persona_login_repository.create(new_login)
         
         return PersonaResponse(
             success=True,
@@ -125,7 +97,6 @@ class PersonaService:
         self, 
         i_cod_persona: int, 
         persona_data: PersonaUpdate,
-        login_data: Optional[PersonaLoginUpdate],
         audit_data: dict
     ) -> PersonaResponse:
         # Verificar si existe la persona
@@ -140,7 +111,7 @@ class PersonaService:
                 }
             )
         
-        # Verificar documento único si se está actualizando
+        # Verificar documento único de ser actualizado
         if persona_data.v_num_documento:
             existing_persona = self.persona_repository.get_by_documento(persona_data.v_num_documento)
             if existing_persona and existing_persona.i_cod_persona != i_cod_persona:
@@ -150,19 +121,6 @@ class PersonaService:
                     error={
                         "code": "PER002",
                         "details": "Ya existe otra persona con este número de documento"
-                    }
-                )
-        
-        # Verificar correo único si se está actualizando
-        if login_data and login_data.v_des_correo:
-            existing_login = self.persona_login_repository.get_by_correo(login_data.v_des_correo)
-            if existing_login and existing_login.i_cod_persona != i_cod_persona:
-                return PersonaResponse(
-                    success=False,
-                    message="Correo ya registrado",
-                    error={
-                        "code": "PER003",
-                        "details": "Ya existe otro usuario con este correo electrónico"
                     }
                 )
         
@@ -183,21 +141,6 @@ class PersonaService:
         persona.t_fec_mod = datetime.now(timezone.utc)
         
         updated_persona = self.persona_repository.update(persona)
-        
-        # Actualizar login si se proporciona
-        if login_data:
-            persona_login = self.persona_login_repository.get_by_persona(i_cod_persona)
-            if persona_login:
-                if login_data.v_des_usuario:
-                    persona_login.v_des_usuario = login_data.v_des_usuario
-                if login_data.v_des_clave:
-                    persona_login.v_des_clave = pwd_context.hash(login_data.v_des_clave)
-                if login_data.v_des_correo:
-                    persona_login.v_des_correo = login_data.v_des_correo
-                if login_data.v_num_telefono:
-                    persona_login.v_num_telefono = login_data.v_num_telefono
-                
-                self.persona_login_repository.update(persona_login)
         
         return PersonaResponse(
             success=True,

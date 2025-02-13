@@ -1,12 +1,11 @@
 # app/routers/persona.py
+from datetime import datetime
 from fastapi import APIRouter, Depends, Request, Query
 from sqlalchemy.orm import Session
 from app.schemas.persona import (
     PersonaCreate,
     PersonaUpdate,
     PersonaResponse,
-    PersonaLoginCreate,
-    PersonaLoginUpdate
 )
 from app.repositories.persona_repository import PersonaRepository, PersonaLoginRepository
 from app.services.persona_service import PersonaService
@@ -22,7 +21,9 @@ def get_audit_data(request: Request) -> dict:
         "v_host_reg": request.headers.get("host", ""),
         "v_host_mod": request.headers.get("host", ""),
         "v_usu_reg": request.headers.get("x-user-id", "system"),
-        "v_usu_mod": request.headers.get("x-user-id", "system")
+        "v_usu_mod": request.headers.get("x-user-id", "system"),
+        "f_fec_reg": datetime.now(),
+        "f_fec_mod": datetime.now()
     }
 
 def get_services(db: Session = Depends(get_db)) -> PersonaService:
@@ -55,22 +56,20 @@ async def get_persona(
 async def create_persona(
     request: Request,
     persona: PersonaCreate,
-    login_data: PersonaLoginCreate | None = None,
     service: PersonaService = Depends(get_services),
     token_data: dict = Depends(validate_token)
 ):
-    return service.create_persona(persona, login_data, get_audit_data(request))
+    return service.create_persona(persona, get_audit_data(request))
 
 @router.put("/{persona_id}", response_model=PersonaResponse)
 async def update_persona(
     request: Request,
     persona_id: int,
     persona: PersonaUpdate,
-    login_data: PersonaLoginUpdate | None = None,
     service: PersonaService = Depends(get_services),
     token_data: dict = Depends(validate_token)
 ):
-    return service.update_persona(persona_id, persona, login_data, get_audit_data(request))
+    return service.update_persona(persona_id, persona, get_audit_data(request))
 
 @router.delete("/{persona_id}", response_model=PersonaResponse)
 async def delete_persona(

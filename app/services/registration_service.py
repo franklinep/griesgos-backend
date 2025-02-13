@@ -76,7 +76,7 @@ class RegistrationService:
             v_num_telefono=registration_data.telefono,
             # Campos de auditoría
             v_usu_reg=audit_data["v_usu_reg"],
-            t_fec_reg=audit_data["f_fec_reg"],
+            t_fec_reg=audit_data["t_fec_reg"],
             v_host_reg=audit_data["v_host_reg"],
             v_ip_reg=audit_data["v_ip_reg"],
         )
