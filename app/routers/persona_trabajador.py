@@ -31,7 +31,7 @@ async def get_trabajadores(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
-    dependencies=[Depends(validate_token)]
+    token_data: dict = Depends(validate_token)
 ):
     try:
         trabajador_repository = PersonaTrabajadorRepository(db)
@@ -44,7 +44,7 @@ async def get_trabajadores(
 async def get_trabajador(
     trabajador_id: int,
     db: Session = Depends(get_db),
-    dependencies=[Depends(validate_token)]
+    token_data: dict = Depends(validate_token)
 ):
     try:
         trabajador_repository = PersonaTrabajadorRepository(db)
@@ -62,7 +62,8 @@ async def get_trabajador(
 async def create_trabajador(
     request: Request,
     trabajador: PersonaTrabajadorCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(validate_token)
 ):
     try:
         trabajador_repository = PersonaTrabajadorRepository(db)
@@ -82,7 +83,8 @@ async def update_trabajador(
     request: Request,
     trabajador_id: int,
     trabajador: PersonaTrabajadorUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(validate_token)
 ):
     try:
         trabajador_repository = PersonaTrabajadorRepository(db)
@@ -101,7 +103,8 @@ async def update_trabajador(
 async def delete_trabajador(
     request: Request,
     trabajador_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(validate_token)
 ):
     try:
         trabajador_repository = PersonaTrabajadorRepository(db)
