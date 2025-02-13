@@ -1,7 +1,6 @@
 # app/loaders/load_data.py
 import socket
 import os
-import os
 import pandas as pd
 import logging
 from datetime import datetime
