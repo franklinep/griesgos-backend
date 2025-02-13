@@ -1,5 +1,7 @@
 # app/loaders/load_data.py
 import socket
+import os
+import os
 import pandas as pd
 import logging
 from datetime import datetime
@@ -24,6 +26,13 @@ def get_import_audit_data() -> dict:
     }
 
 def setup_logger():
+    # Crear la ruta absoluta para el directorio de logs
+    log_dir = os.path.join('C:\Griesgosapi\logs')
+    log_file = os.path.join(log_dir, 'data_loader.log')
+    
+    # Asegurar que el directorio existe
+    os.makedirs(log_dir, exist_ok=True)
+    
     logger = logging.getLogger('data_loader')
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -55,14 +64,47 @@ def get_or_create_master_data(db: SessionLocal, df: pd.DataFrame) -> Dict:
     master_data = {'unidad': {}, 'area': {}, 'puesto': {}, 'categoria': {}}
     model_map = {
         'unidad': (Unidad, 'Subdivisión de personal (Nombre de Subdivisión de personal)'),
-        'area': (Area, 'Área de personal (Picklist Label)'),
+        'categoria': (Categoria, 'Área de personal (Picklist Label)'),
         'puesto': (Puesto, 'Position Posición (Label)'),
-        'categoria': (Categoria, 'Position Centro de costo (Código de centro de costos)')
+        'area': (Area, 'Position Centro de costo (Código de centro de costos)')
     }
     
     audit_data = get_import_audit_data()
     
+    # Primero procesamos las unidades
+    try:
+        unidad_model, unidad_column = model_map['unidad']
+        unique_unidades = df[unidad_column].dropna().unique()
+        
+        for value in unique_unidades:
+            name = str(value).strip()
+            if not name:
+                continue
+
+            unidad = db.query(unidad_model).filter(unidad_model.v_des_nombre == name).first()
+            if not unidad:
+                unidad = unidad_model(
+                    v_des_nombre=name,
+                    **audit_data
+                )
+                db.add(unidad)
+                db.flush()
+            
+            master_data['unidad'][name] = unidad.i_cod_unidad
+        
+        db.commit()
+        logger.info(f"Procesadas unidades: {len(unique_unidades)} registros")
+        
+    except Exception as e:
+        logger.error(f"Error procesando unidades: {str(e)}")
+        db.rollback()
+        return master_data
+
+    # Luego procesamos el resto de entidades
     for data_type, (model, column) in model_map.items():
+        if data_type == 'unidad':  # Ya procesado
+            continue
+            
         try:
             unique_values = df[column].dropna().unique()
             for value in unique_values:
@@ -73,11 +115,23 @@ def get_or_create_master_data(db: SessionLocal, df: pd.DataFrame) -> Dict:
 
                     item = db.query(model).filter(model.v_des_nombre == name).first()
                     if not item:
-                        # Crear nueva entidad con campos de auditoría
-                        item = model(
-                            v_des_nombre=name,
-                            **audit_data
-                        )
+                        # Para áreas, necesitamos asignar una unidad
+                        if data_type == 'area':
+                            # Obtener la unidad correspondiente de la misma fila
+                            unidad_name = df[df[column] == value][model_map['unidad'][1]].iloc[0]
+                            unidad_id = master_data['unidad'].get(str(unidad_name).strip())
+                            
+                            item = model(
+                                v_des_nombre=name,
+                                i_cod_unidad=unidad_id,  # Asignar la unidad correspondiente
+                                **audit_data
+                            )
+                        else:
+                            item = model(
+                                v_des_nombre=name,
+                                **audit_data
+                            )
+                        
                         db.add(item)
                         db.flush()
 
@@ -182,13 +236,13 @@ def process_excel(file_path: str) -> None:
                         i_cod_unidad=master_data['unidad'].get(
                             str(row['Subdivisión de personal (Nombre de Subdivisión de personal)']).strip()
                         ),
-                        i_cod_area=master_data['area'].get(
+                        i_cod_categoria=master_data['categoria'].get(
                             str(row['Área de personal (Picklist Label)']).strip()
                         ),
                         i_cod_puesto=master_data['puesto'].get(
                             str(row['Position Posición (Label)']).strip()
                         ),
-                        i_cod_categoria=master_data['categoria'].get(
+                        i_cod_area=master_data['area'].get(
                             str(row['Position Centro de costo (Código de centro de costos)']).strip()
                         ),
                         t_fec_ingreso=fecha_ingreso or datetime.now(),
