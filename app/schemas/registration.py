@@ -4,7 +4,7 @@ from typing import Optional
 import re
 
 class RegistrationRequest(BaseModel):
-    documento: str = Field(..., min_length=8, max_length=20)
+    documento: str = Field(..., min_length=7, max_length=20)
     contrasenia: str = Field(..., min_length=8)
     correo: EmailStr
     telefono: str = Field(..., min_length=9, max_length=15)
